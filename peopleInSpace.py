@@ -20,7 +20,8 @@ def callStation(signal):
     curr_time = int(time.time())
     next_pass = req.json()['response'][1]['risetime']
     g = geocoder.osm([lat, long], method='reverse')
-    if (g.country == "Greece") and (lat >= 37.868349) and (lat <= 38.134557) and (long >= 23.564478) and (long <= 23.914901):
+    if (signal == 1) and (g.country == "Greece") and (lat >= 37.868349) and (lat <= 38.134557) and (long >= 23.564478) and (long <= 23.914901):
+        signal = 2
         pushbullet_message("ISS visible from Athens now!", "http://www.google.com/maps/place/{},{}".format(lat, long))
     if (signal == 0) and (next_pass - curr_time <= 10800):
         signal = 1
@@ -28,7 +29,7 @@ def callStation(signal):
         minutes = ((next_pass-curr_time)%3600)//60
         seconds = ((next_pass-curr_time)%3600)%60
         pushbullet_message("ISS will be visible from Athens soon!", "{} hour(s), {} minute(s), {} second(s)".format(hours, minutes, seconds))
-    elif (signal == 1) and (next_pass - curr_time > 10800):
+    if (signal == 2) and (next_pass - curr_time > 10800):
         signal = 0
     print("Landmarks the station is visible from: ", g.country)
     print("See location: ","http://www.google.com/maps/place/{},{}".format(lat, long))
@@ -48,8 +49,8 @@ for i in range(len(data['people'])):
 signal = 0
 (lastknown,signal) = callStation(signal)
 firstknown = lastknown
-time.sleep(10)
+time.sleep(60)
 while (1):
         (currentknown,signal) = callStation(signal)
         lastknown = callDistance(lastknown, currentknown)
-        time.sleep(10)
+        time.sleep(60)
