@@ -18,12 +18,12 @@ def callStation(signal):
     long = (requests.get("http://api.open-notify.org/iss-now.json")).json()['iss_position']['longitude']
     req = requests.get("http://api.open-notify.org/iss-pass.json?lat=37.983810&lon=23.727539")
     curr_time = int(time.time())
-    next_pass = req.json()['response'][1]['risetime']
+    next_pass = req.json()['response'][0]['risetime']
     g = geocoder.osm([lat, long], method='reverse')
     if (signal == 1) and (g.country == "Greece") and (lat >= 37.868349) and (lat <= 38.134557) and (long >= 23.564478) and (long <= 23.914901):
         signal = 2
         pushbullet_message("ISS visible from Athens now!", "http://www.google.com/maps/place/{},{}".format(lat, long))
-    if (signal == 0) and (next_pass - curr_time <= 10800):
+    if (signal == 0) and ((next_pass - curr_time) <= 10800):
         signal = 1
         hours = (next_pass-curr_time)//3600
         minutes = ((next_pass-curr_time)%3600)//60
@@ -36,21 +36,21 @@ def callStation(signal):
     lastknown = (lat,long)
     return (lastknown,signal)
 def callDistance(lastknown, currentknown):
-    print("ISS has traveled approximately ", geodesic(lastknown, currentknown).kilometers, "kilometers in 10 seconds.")
+    print("ISS has traveled approximately ", int(geodesic(lastknown, currentknown).kilometers), "kilometers in 60 seconds.")
     return currentknown
-def calcDistance(firstknown,currentknown):
-    print("The ISS is traveling at approximately  ", geodesic(firstknown, currentknown).miles, "miles per minuite.")
-    mile_hour = (int(geodesic(firstknown, currentknown).miles) * 60)
-    print("The ISS is traveling at approximately ", mile_hour, " miles per hour.\n>>>discontinuing tracking>>>")
+def calcSpeed(firstknown,currentknown):
+    print("The ISS is traveling at approximately  ", int(geodesic(firstknown, currentknown).kilometers / 60), "kilometers per second.")
+    km_hour = (int(geodesic(firstknown, currentknown).kilometers) * 60)
+    print("The ISS is traveling at approximately ", km_hour, " kilometers per hour.")
 
 data = (requests.get("http://api.open-notify.org/astros.json")).json();print("Data Request: ",(data['message'])),print("Total humans in orbit: ",data['number'],"\nPrinting manifest:")
 for i in range(len(data['people'])):
     print(("%s is currently in space aboard the %s." % ((data['people'][i]['name']), (data['people'][i]['craft']))))
 signal = 0
 (lastknown,signal) = callStation(signal)
-firstknown = lastknown
 time.sleep(60)
 while (1):
-        (currentknown,signal) = callStation(signal)
-        lastknown = callDistance(lastknown, currentknown)
-        time.sleep(60)
+    (currentknown,signal) = callStation(signal)
+    calcSpeed(lastknown, currentknown)
+    lastknown = callDistance(lastknown, currentknown)
+    time.sleep(60)
